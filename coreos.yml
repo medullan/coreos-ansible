@@ -1,0 +1,16 @@
+---
+- hosts: coreos
+  connection: local
+  #gather_facts: false
+  tasks:
+  - name: Automation CoreOS Cluster
+    cloudformation: stack_name='automation-ansible-coreos-cluster' state=present region='us-east-1' disable_rollback=true template='files/coreos-stable-pv.template'
+    args:
+      template_parameters:
+        InstanceType: t1.micro
+        ClusterSize: 3
+        DiscoveryURL: 'https://discovery.etcd.io/a51e4d3519d693e8f1d86ffa31502182'
+        KeyPair: Automation
+    register: stack
+    tags:
+      Stack: ansible-cloudformation-coreos
