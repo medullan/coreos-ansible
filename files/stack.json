@@ -3,30 +3,41 @@
     "Description": "CoreOS stack",
     "Mappings": {
         "RegionMap": {
-            "eu-west-1": {
-                "ami": "ami-8368adf4"
-            },
-            "us-east-1": {
-                "ami": "ami-3becf652"
-            },
-            "us-west-1": {
-                "ami": "ami-e4dde5a1"
-            },
-            "us-west-2": {
-                "ami": "ami-388bfe08"
-            },
-            "ap-southeast-1": {
-                "ami": "ami-28bdee7a"
-            },
-            "ap-southeast-2": {
-                "ami": "ami-7d2fb747"
-            },
-            "ap-northeast-1": {
-                "ami": "ami-fb5822fa"
-            },
-            "sa-east-1": {
-                "ami": "ami-83c76a9e"
-            }
+          "eu-central-1" : {
+              "AMI" : "ami-e8c6f0f5"
+          },
+
+          "ap-northeast-1" : {
+              "AMI" : "ami-858eb884"
+          },
+
+          "sa-east-1" : {
+              "AMI" : "ami-7b922666"
+          },
+
+          "ap-southeast-2" : {
+              "AMI" : "ami-13abc629"
+          },
+
+          "ap-southeast-1" : {
+              "AMI" : "ami-7e78592c"
+          },
+
+          "us-east-1" : {
+              "AMI" : "ami-da78c3b2"
+          },
+
+          "us-west-2" : {
+              "AMI" : "ami-e32965d3"
+          },
+
+          "us-west-1" : {
+              "AMI" : "ami-876772c2"
+          },
+
+          "eu-west-1" : {
+              "AMI" : "ami-46e14e31"
+          }
         }
     },
     "Parameters": {
@@ -84,6 +95,10 @@
         },
         "KeyPair": {
             "Description": "The name of an existing EC2 Key Pair to allow SSH access to the instance.",
+            "Type": "String"
+        },
+        "DockerConfigFile" : {
+            "Description": "Contents of the docker config file",
             "Type": "String"
         }
     },
@@ -198,6 +213,23 @@
                 }
             }
         },
+        "IngressMongoDB": {
+            "Type": "AWS::EC2::SecurityGroupIngress",
+            "Properties": {
+                "GroupName": {
+                    "Ref": "CoreOSSecurityGroup"
+                },
+                "IpProtocol": "tcp",
+                "FromPort": 27017,
+                "ToPort": 27017,
+                "SourceSecurityGroupId": {
+                    "Fn::GetAtt": [
+                        "CoreOSSecurityGroup",
+                        "GroupId"
+                    ]
+                }
+            }
+        },
         "CoreOSServerAutoScale": {
             "Type": "AWS::AutoScaling::AutoScalingGroup",
             "Properties": {
@@ -233,7 +265,7 @@
         "CoreOSServerLaunchConfig": {
           "Type": "AWS::AutoScaling::LaunchConfiguration",
           "Properties": {
-            "ImageId" : { "Fn::FindInMap" : [ "RegionMap", { "Ref" : "AWS::Region" }, "ami" ]},
+            "ImageId" : { "Fn::FindInMap" : [ "RegionMap", { "Ref" : "AWS::Region" }, "AMI" ]},
             "InstanceType": {"Ref": "InstanceType"},
             "KeyName": {"Ref": "KeyPair"},
             "SecurityGroups": [{"Ref": "CoreOSSecurityGroup"}],
@@ -241,6 +273,8 @@
               { "Fn::Join": [ "", [
                 "#cloud-config\n\n",
                 "coreos:\n",
+                "  fleet:\n",
+                "    metadata: public_ip=$public_ipv4\n",
                 "  etcd:\n",
                 "    discovery: ", { "Ref": "DiscoveryURL" }, "\n",
                 "    addr: $", { "Ref": "AdvertisedIPAddress" }, "_ipv4:4001\n",
@@ -255,7 +289,7 @@
                 "    permissions: 0644\n",
                 "    owner: root\n",
                 "    content: |\n",
-                "      {\"https://index.docker.io/v1/\": {\"auth\": \"bWVkdWxsYW5jaTpQYXNzd29yZDEyMw==\",\"email\": \"hheaven@medullan.com\"  }}"
+                "      ",{"Ref": "DockerConfigFile"},"\n" 
                 ] ]
               }
             }
